@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Asistencia - Gimnasio</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col items-center justify-center p-4 antialiased text-slate-800">
+
+<div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+    <!-- Encabezado con gradiente original -->
+    <div class="bg-gradient-to-r from-emerald-600 to-teal-700 p-6 text-white text-center">
+        <div class="inline-flex items-center justify-center w-14 h-14 bg-white/20 rounded-full mb-3 shadow-inner">
+            <i class="fa-solid fa-dumbbell text-2xl text-white"></i>
+        </div>
+        <h1 class="text-2xl font-bold uppercase tracking-wide">Control de Asistencia</h1>
+        <p class="text-teal-100 text-sm mt-1 font-medium">Gimnasio Comuna Saludable</p>
+    </div>
+
+    <div class="p-6 sm:p-8">
+        <!-- SECCIÓN 1: BÚSQUEDA DE RUT -->
+        <div id="seccion-busqueda" class="space-y-4">
+            <label class="block text-sm font-semibold uppercase tracking-wider text-slate-500">
+                Ingresa tu RUT para comenzar
+            </label>
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                    <i class="fa-solid fa-id-card text-lg"></i>
+                </span>
+                <input
+                    type="text"
+                    id="rut_completo"
+                    name="rut_completo"
+                    placeholder="12.345.678-9"
+                    class="w-full pl-11 pr-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-xl text-lg font-bold tracking-widest text-slate-700 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all uppercase"
+                    oninput="formatearRutInput(this)"
+                    maxlength="12"
+                    inputmode="text"
+                >
+            </div>
+            <button
+                onclick="buscarUsuario()"
+                id="btn-buscar"
+                class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-emerald-600/20 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 text-lg cursor-pointer"
+            >
+                <span>Buscar y Continuar</span>
+                <i class="fa-solid fa-chevron-right text-sm"></i>
+            </button>
+        </div>
+
+        <!-- LOADER -->
+        <div id="loader" class="hidden py-8 flex flex-col items-center justify-center space-y-3">
+            <div class="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-slate-500 font-medium text-sm animate-pulse">Buscando en la base de datos...</p>
+        </div>
+
+        <!-- SECCIÓN 2: FORMULARIO DE REGISTRO / ASISTENCIA -->
+        <form id="formulario-registro" class="hidden space-y-6" onsubmit="enviarDatos(event)">
+            <div id="mensaje-estado" class="p-4 rounded-xl flex items-start space-x-3">
+                <!-- Se llena dinámicamente con JS -->
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-400">Nombres *</label>
+                    <input type="text" id="nombres" name="nombres" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none">
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-400">Apellido Paterno *</label>
+                    <input type="text" id="apellidoPaterno" name="apellidoPaterno" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none">
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-400">Apellido Materno</label>
+                    <input type="text" id="apellidoMaterno" name="apellidoMaterno" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none">
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-400">Fecha de Nacimiento *</label>
+                    <input type="date" id="fechaNacimiento" name="fechaNacimiento" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none">
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-400">Tipo de Usuario *</label>
+                    <select id="tipoUsuario" name="tipoUsuario" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none">
+                        <option value="" disabled selected>Selecciona una opción</option>
+                        <option value="ADULTO 19 A 59 AÑOS">Adulto 19 a 59 años</option>
+                        <option value="FUNCIONARIO MUNICIPAL">Funcionario municipal</option>
+                        <option value="ADULTO MAYOR 60 AÑOS O MÁS">Adulto Mayor 60 años o más</option>
+                        <option value="PUBLICO INFANTIL 2 A 10 AÑOS">Publico infantil 2 a 10 años</option>
+                        <option value="PUBLICO ADOLESCENTE 11 A 18 AÑOS">Publico adolescente 11 a 18 años</option>
+                        <option value="OTRO">Otro</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-400">CESFAM *</label>
+                    <select id="cesfam" name="cesfam" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none">
+                        <option value="" disabled selected>Selecciona tu CESFAM</option>
+                        <option value="LVN">LVN (Lo Valledor Norte)</option>
+                        <option value="EEF">EEF (Edgardo Enríquez Frödden)</option>
+                        <option value="PPD">PPD (Padre Pierre Dubois)</option>
+                        <option value="AN">AN (Amador Neghme)</option>
+                        <option value="OTRO">OTRO</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-400">Teléfono *</label>
+                    <input type="tel" id="telefono" name="telefono" required placeholder="Ej: 912345678" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none">
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-400">Dirección</label>
+                    <input type="text" id="direccion" name="direccion" placeholder="Ej: Av. Principal 123" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none">
+                </div>
+            </div>
+
+            <hr class="border-slate-200 my-4">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-500">Clase del día *</label>
+                    <select id="clase" name="clase" required class="w-full p-3 bg-emerald-50/50 border border-emerald-200 rounded-lg focus:border-emerald-500 focus:outline-none text-emerald-900 font-medium">
+                        <option value="" disabled selected>Selecciona la clase</option>
+                        <option value="Zumba">Zumba</option>
+                        <option value="Full Core">Full core</option>
+                        <option value="Cross Training">Cross training</option>
+                        <option value="GAP">GAP</option>
+                        <option value="Entrenamiento Funcional">Entrenamiento Funcional</option>
+                        <option value="Body Strong">Body strong</option>
+                        <option value="Taller Infantil">Taller infantil</option>
+                        <option value="Entrenamiento Adolescente">Entrenamiento adolescente</option>
+                        <option value="Acondicionamiento Físico">Acondicionamiento físico</option>
+                        <option value="Evento Comuna Saludable">Evento comuna saludable</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-500">Profesor *</label>
+                    <select id="profesor" name="profesor" required class="w-full p-3 bg-emerald-50/50 border border-emerald-200 rounded-lg focus:border-emerald-500 focus:outline-none text-emerald-900 font-medium">
+                        <option value="" disabled selected>Selecciona el profesor</option>
+                        <option value="Dario Toro">Dario Toro</option>
+                        <option value="Mario Bustamante">Mario Bustamante</option>
+                        <option value="Erick Hernandez">Erick Hernandez</option>
+                        <option value="Christopher Plaza">Christopher Plaza</option>
+                        <option value="Leroy Vergara">Leroy Vergara</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
+                <button
+                    type="button"
+                    onclick="volverAtras()"
+                    class="w-full sm:w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 px-4 rounded-xl transition-all cursor-pointer text-center"
+                >
+                    Atrás
+                </button>
+                <button
+                    type="submit"
+                    id="btn-guardar"
+                    class="w-full sm:w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-600/20 active:scale-[0.98] transition-all cursor-pointer text-center"
+                >
+                    Registrar Asistencia
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let usuarioExiste = false;
+
+// 1. FORMATEO AUTOMÁTICO DEL RUT (Ideal para móviles)
+function formatearRutInput(input) {
+    let valor = input.value.replace(/[^0-9kK]/g, '').toUpperCase();
+    if (valor.length > 9) {
+        valor = valor.slice(0, 9);
+    }
+    if (valor.length === 0) {
+        input.value = "";
+        return;
+    }
+    let cuerpo = valor.slice(0, -1);
+    let dv = valor.slice(-1);
+    if (cuerpo.length > 0) {
+        cuerpo = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        input.value = cuerpo + "-" + dv;
+    } else {
+        input.value = dv;
+    }
+}
+
+// 2. BUSCAR USUARIO
+function buscarUsuario() {
+    const input = document.getElementById('rut_completo');
+    const rutCompleto = input.value.trim();
+    
+    if (!rutCompleto || rutCompleto.length < 3) {
+        Swal.fire('Atención', 'Por favor ingresa un RUT válido.', 'warning');
+        return;
+    }
+
+    document.getElementById('seccion-busqueda').classList.add('hidden');
+    document.getElementById('loader').classList.remove('hidden');
+
+    // Llamada al backend enviando el RUT completo
+    fetch(`http://127.0.0.1:5000/api/buscar_rut?rut_completo=${encodeURIComponent(rutCompleto)}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loader').classList.add('hidden');
+            cargarFormulario(data);
+        })
+        .catch(error => {
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('seccion-busqueda').classList.remove('hidden');
+            Swal.fire('Error', 'No se pudo conectar al servidor Python. ¿Está encendido?', 'error');
+            console.error(error);
+        });
+}
+
+// 3. CARGAR EL FORMULARIO (Lógica de 2 estados)
+function cargarFormulario(response) {
+    const form = document.getElementById('formulario-registro');
+    const msgEstado = document.getElementById('mensaje-estado');
+    form.reset();
+
+    // Campos que se bloquean si el usuario ya existe
+    const camposDeshabilitables = [
+        'nombres', 'apellidoPaterno', 'apellidoMaterno',
+        'fechaNacimiento', 'tipoUsuario', 'cesfam', 'telefono', 'direccion'
+    ];
+
+    if (response.existe) {
+        usuarioExiste = true;
+        const u = response.datos;
+        
+        // Mensaje de bienvenida
+        msgEstado.className = "p-4 rounded-xl flex items-start space-x-3 bg-emerald-50 border border-emerald-200 text-emerald-800";
+        msgEstado.innerHTML = `
+            <i class="fa-solid fa-circle-check text-xl text-emerald-600 mt-0.5"></i>
+            <div>
+                <p class="font-bold">¡Hola de nuevo, ${u.nombres}!</p>
+                <p class="text-xs text-emerald-700">Tu usuario ya se encuentra registrado. Solo selecciona la clase y el profesor para finalizar.</p>
+            </div>
+        `;
+
+        // Precarga de datos
+        document.getElementById('nombres').value = u.nombres || '';
+        document.getElementById('apellidoPaterno').value = u.apellido_paterno || '';
+        document.getElementById('apellidoMaterno').value = u.apellido_materno || '';
+        document.getElementById('fechaNacimiento').value = u.fecha_nacimiento || '';
+        document.getElementById('tipoUsuario').value = u.tipo_usuario || '';
+        document.getElementById('cesfam').value = u.cesfam || '';
+        document.getElementById('telefono').value = u.telefono || '';
+        document.getElementById('direccion').value = u.direccion || '';
+
+        // Deshabilitar edición
+        camposDeshabilitables.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.disabled = true;
+                el.classList.add('bg-slate-100', 'text-slate-500', 'cursor-not-allowed');
+            }
+        });
+    } else {
+        // Lógica para usuario nuevo
+        usuarioExiste = false;
+        msgEstado.className = "p-4 rounded-xl flex items-start space-x-3 bg-blue-50 border border-blue-200 text-blue-800";
+        msgEstado.innerHTML = `
+            <i class="fa-solid fa-user-plus text-xl text-blue-600 mt-0.5"></i>
+            <div>
+                <p class="font-bold">Usuario no encontrado</p>
+                <p class="text-xs text-blue-700">Por favor, completa todos los datos personales para registrarte y asistir.</p>
+            </div>
+        `;
+        
+        // Habilitar edición (por si acaso)
+        camposDeshabilitables.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.disabled = false;
+                el.classList.remove('bg-slate-100', 'text-slate-500', 'cursor-not-allowed');
+            }
+        });
+    }
+
+    // Mostrar formulario
+    form.classList.remove('hidden');
+}
+
+// 4. VOLVER ATRÁS
+function volverAtras() {
+    document.getElementById('formulario-registro').classList.add('hidden');
+    document.getElementById('seccion-busqueda').classList.remove('hidden');
+}
+
+// 5. ENVIAR ASISTENCIA
+function enviarDatos(event) {
+    event.preventDefault();
+    const btnGuardar = document.getElementById('btn-guardar');
+    
+    btnGuardar.disabled = true;
+    btnGuardar.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> <span>Registrando...</span>';
+
+    // Recopilar datos usando los nombres exactos de los inputs
+    const datos = {
+        rut_completo: document.getElementById('rut_completo').value.trim(),
+        nombres: document.getElementById('nombres').value.trim(),
+        apellidoPaterno: document.getElementById('apellidoPaterno').value.trim(),
+        apellidoMaterno: document.getElementById('apellidoMaterno').value.trim(),
+        fechaNacimiento: document.getElementById('fechaNacimiento').value,
+        tipoUsuario: document.getElementById('tipoUsuario').value,
+        cesfam: document.getElementById('cesfam').value,
+        telefono: document.getElementById('telefono').value.trim(),
+        direccion: document.getElementById('direccion').value.trim(),
+        clase: document.getElementById('clase').value,
+        profesor: document.getElementById('profesor').value
+    };
+
+    fetch('http://127.0.0.1:5000/api/registrar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datos)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            Swal.fire('Error al Guardar', data.error, 'error');
+        } else {
+            Swal.fire({
+                title: '¡Operación Exitosa!',
+                text: data.mensaje || 'Asistencia registrada con éxito.',
+                icon: 'success',
+                confirmButtonColor: '#059669'
+            }).then(() => {
+                // Resetear todo para el siguiente usuario
+                document.getElementById('formulario-registro').classList.add('hidden');
+                document.getElementById('seccion-busqueda').classList.remove('hidden');
+                document.getElementById('rut_completo').value = "";
+                usuarioExiste = false;
+            });
+        }
+    })
+    .catch(error => {
+        Swal.fire('Error de Conexión', 'Asegúrate de que el servidor Python (Flask) esté encendido.', 'error');
+        console.error(error);
+    })
+    .finally(() => {
+        btnGuardar.disabled = false;
+        btnGuardar.innerHTML = 'Registrar Asistencia';
+    });
+}
+</script>
+</body>
+</html>
