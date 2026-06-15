@@ -5,15 +5,14 @@ from flask_cors import CORS
 import mysql.connector
 from datetime import datetime
 
-# --- 🚨 PRUEBA DE FUEGO: Si ves esto en la terminal, el archivo es el nuevo 🚨 ---
-print("🚨 🚨 🚨 ESTE ES EL CÓDIGO NUEVO Y ACTUALIZADO 🚨 🚨 🚨")
+# --- Se ejecuta correctamente---
+print("Operativo")
 # -------------------------------------------------------------------------------
 
 load_dotenv()
-# ... (el resto de tu código sigue igual) ...
-
+#--------------------------------------------------------------------------------
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": ["http://127.0.0.1", "http://localhost"]}})
+CORS(app)
 
 # 2. Configuración SEGURA de la Base de Datos
 db_config = {
