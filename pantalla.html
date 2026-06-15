@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Control de Asistencia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+        
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .user-card {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .user-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(56, 189, 248, 0.3);
+        }
+        
+        .neon-text {
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+        }
+        
+        .clock-glow {
+            text-shadow: 0 0 30px rgba(56, 189, 248, 0.8);
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(56, 189, 248, 0.6); }
+        }
+        
+        .live-indicator {
+            animation: pulse-glow 2s infinite;
+        }
+        
+        select {
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid rgba(56, 189, 248, 0.3);
+            color: white;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+        }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white p-6">
+
+    <!-- Header Principal -->
+    <div class="max-w-7xl mx-auto mb-8">
+        <div class="glass-card rounded-3xl p-8">
+            <div class="flex flex-col lg:flex-row justify-between items-center gap-6">
+                
+                <!-- Reloj Digital -->
+                <div class="text-center lg:text-left">
+                    <div class="text-6xl lg:text-7xl font-bold clock-glow text-cyan-400" id="reloj">
+                        00:00:00
+                    </div>
+                    <div class="text-slate-400 mt-2 text-lg" id="fecha">
+                        Cargando fecha...
+                    </div>
+                </div>
+
+                <!-- Contador Total -->
+                <div class="live-indicator glass-card rounded-2xl px-8 py-6 text-center">
+                    <div class="text-5xl font-bold text-cyan-400 neon-text" id="total-usuarios">
+                        0
+                    </div>
+                    <div class="text-slate-400 mt-2 text-sm uppercase tracking-wider">
+                        Participantes Registrados
+                    </div>
+                    <div class="text-xs text-slate-500 mt-1">
+                        Ventana: 50 minutos
+                    </div>
+                </div>
+
+                <!-- Selects de Control -->
+                <div class="flex flex-col gap-4 w-full lg:w-auto">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-2 uppercase tracking-wider">
+                            <i class="fas fa-dumbbell mr-2"></i>Clase
+                        </label>
+                        <select id="select-clase" class="w-full lg:w-80 px-4 py-3 rounded-xl text-base font-semibold">
+                            <option value="">Cargando clases...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-2 uppercase tracking-wider">
+                            <i class="fas fa-chalkboard-teacher mr-2"></i>Profesor
+                        </label>
+                        <select id="select-profesor" class="w-full lg:w-80 px-4 py-3 rounded-xl text-base font-semibold">
+                            <option value="">Cargando profesores...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid de Usuarios -->
+    <div class="max-w-7xl mx-auto">
+        <div id="grid-usuarios" class="grid-container">
+            <!-- Las tarjetas se generan dinámicamente -->
+        </div>
+        
+        <!-- Estado vacío -->
+        <div id="empty-state" class="hidden text-center py-20">
+            <i class="fas fa-users-slash text-8xl text-slate-600 mb-4"></i>
+            <p class="text-2xl text-slate-400">No hay registros en esta sesión</p>
+            <p class="text-slate-500 mt-2">Los participantes aparecerán aquí cuando registren su asistencia</p>
+        </div>
+    </div>
+
+    <script>
+        let intervaloRefresco;
+        let ventanaMinutos = 50;
+
+        // Reloj en vivo
+        function actualizarReloj() {
+            const ahora = new Date();
+            const horas = String(ahora.getHours()).padStart(2, '0');
+            const minutos = String(ahora.getMinutes()).padStart(2, '0');
+            const segundos = String(ahora.getSeconds()).padStart(2, '0');
+            
+            document.getElementById('reloj').textContent = `${horas}:${minutos}:${segundos}`;
+            
+            const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('fecha').textContent = ahora.toLocaleDateString('es-ES', opciones);
+        }
+
+        // Cargar clases y profesores
+        async function cargarSelects() {
+            try {
+                const response = await fetch('http://localhost:5000/api/obtener-clases-profesores');
+                const data = await response.json();
+                
+                const selectClase = document.getElementById('select-clase');
+                const selectProfesor = document.getElementById('select-profesor');
+                
+                selectClase.innerHTML = '<option value="">Selecciona una clase</option>';
+                data.clases.forEach(clase => {
+                    selectClase.innerHTML += `<option value="${clase.id_clase}">${clase.nombre_clase}</option>`;
+                });
+                
+                selectProfesor.innerHTML = '<option value="">Selecciona un profesor</option>';
+                data.profesores.forEach(prof => {
+                    selectProfesor.innerHTML += `<option value="${prof.id_profesor}">${prof.nombre_completo}</option>`;
+                });
+                
+                // Cargar datos iniciales si hay selección guardada
+                cargarDatos();
+            } catch (error) {
+                console.error('Error cargando selects:', error);
+            }
+        }
+
+        // Cargar datos de asistencia
+        async function cargarDatos() {
+            const idClase = document.getElementById('select-clase').value;
+            const idProfesor = document.getElementById('select-profesor').value;
+            
+            if (!idClase || !idProfesor) {
+                document.getElementById('grid-usuarios').innerHTML = '';
+                document.getElementById('empty-state').classList.remove('hidden');
+                document.getElementById('total-usuarios').textContent = '0';
+                return;
+            }
+            
+            try {
+                const response = await fetch(
+                    `http://localhost:5000/api/estado-asistencia?clase=${idClase}&profesor=${idProfesor}`
+                );
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('Error:', data.error);
+                    return;
+                }
+                
+                // Actualizar contador
+                document.getElementById('total-usuarios').textContent = data.total;
+                
+                // Renderizar grid
+                const grid = document.getElementById('grid-usuarios');
+                const emptyState = document.getElementById('empty-state');
+                
+                if (data.usuarios.length === 0) {
+                    grid.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                } else {
+                    emptyState.classList.add('hidden');
+                    grid.innerHTML = data.usuarios.map((user, index) => `
+    <div class="user-card rounded-2xl p-6" style="animation: fadeIn 0.5s ease ${index * 0.05}s both">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-xl font-bold text-white">
+                ${user.nombres.charAt(0)}${user.apellido_paterno.charAt(0)}
+            </div>
+            <div>
+                <div class="font-bold text-xl text-white">
+                    ${user.nombres} ${user.apellido_paterno}
+                </div>
+                ${user.apellido_materno ? `<div class="text-sm text-slate-400">${user.apellido_materno}</div>` : ''}
+            </div>
+        </div>
+    </div>
+`).join('');
+                }
+            } catch (error) {
+                console.error('Error cargando datos:', error);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('select-clase').addEventListener('change', cargarDatos);
+        document.getElementById('select-profesor').addEventListener('change', cargarDatos);
+
+        // Inicialización
+        actualizarReloj();
+        setInterval(actualizarReloj, 1000);
+        cargarSelects();
+        
+        // Auto-refresh cada 30 segundos
+        intervaloRefresco = setInterval(cargarDatos, 30000);
+
+        // Animación CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
